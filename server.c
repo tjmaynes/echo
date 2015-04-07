@@ -1,8 +1,5 @@
 // File: server.c
 // Authors: TJ Maynes and Chris Migut
-//
-//
-
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +20,7 @@
 
 #define _REENTRANT
 #define SHMKEY ((key_t) 5555)
-#define BUFFER_SIZE 15
+#define BUFFER_SIZE 13
 #define PORT "8080"
 #define CLIENTS 10
 
@@ -48,11 +45,11 @@ void* handler(void* args) {
   int handlerThread = (int)args;
   int client;
 
+  // create tcp socket connection
   if((client = socket(AF_INET,SOCK_STREAM,0)) < 0 ){
     perror("Failed to create socket for client");
     exit(1);
   }
-
 
   fflush(stdout);
   pthread_exit(NULL);
@@ -95,7 +92,7 @@ main(){
   }
 
   /* Wait for the threads to finish */
-  //pthread_join(tid1, NULL);
+  pthread_join(tid, NULL);
 
   printf("Number of Client Connections  =  %d\n", buffer.connection_count);
   printf("------------------------------------------------\n");
