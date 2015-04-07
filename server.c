@@ -30,8 +30,7 @@
 // function headers
 void* handler(void* args); // get
 
-typedef struct
-{
+typedef struct {
   int connection_count;
   char value[BUFFER_SIZE];
 } shared_mem;
@@ -46,14 +45,24 @@ sem_t sem3; // full
 
 // handler function
 void* handler(void* args) {
+  int handlerThread = (int)args;
+  int client;
+
+  if((client = socket(AF_INET,SOCK_STREAM,0)) < 0 ){
+    perror("Failed to create socket for client");
+    exit(1);
+  }
+
+
   fflush(stdout);
+  pthread_exit(NULL);
 }
 
 int
 main(){
   int i;                      /* count */
   int shmid;                  /* shared memory ID */
-  pthread_t tid1;             /* process id for thread 1 */
+  pthread_t tid[CLIENTS];     /* process id for thread 1 */
   pthread_attr_t attr[1];     /* attribute pointer array */
   char *shmadd;
   shmadd = (char *) 0;
@@ -78,7 +87,7 @@ main(){
   /* Create threads for each client connection */
   // may not need &attr[0] => NULL (default values)
   for (i = 0; i < CLIENTS; i++){
-     if(pthread_create(&tid1, &attr[0], &handler, (void *)i) < 0){
+     if(pthread_create(&tid[i], &attr[0], &handler, (void *)i) < 0){
         perror("could not create pthread");
         exit(-1);
      }
