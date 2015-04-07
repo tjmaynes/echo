@@ -25,13 +25,14 @@
 #define SHMKEY ((key_t) 5555)
 #define BUFFER_SIZE 15
 #define PORT "8080"
+#define CLIENTS 10
 
 // function headers
 void* handler(void* args); // get
 
 typedef struct
 {
-  int count;
+  int connection_count;
   char value[BUFFER_SIZE];
 } shared_mem;
 
@@ -50,16 +51,12 @@ void* handler(void* args) {
 
 int
 main(){
-  int     r = 0;
-  int     i;
-  int     shmid;  /* shared memoryry ID */
-  pthread_t     tid1[1];     /* process id for thread 1 */
-  pthread_attr_t     attr[1];     /* attribute pointer array */
-  char               *shmadd;
+  int i;                      /* count */
+  int shmid;                  /* shared memory ID */
+  pthread_t tid1;             /* process id for thread 1 */
+  pthread_attr_t attr[1];     /* attribute pointer array */
+  char *shmadd;
   shmadd = (char *) 0;
-
-  struct addrinfo hints, *res, *p;
-  int status;
 
   /* Create and connect to a shared memory segment*/
   if ((shmid = shmget (SHMKEY, sizeof(int), IPC_CREAT | 0666)) < 0)
@@ -78,13 +75,20 @@ main(){
   pthread_attr_setscope(&attr[0], PTHREAD_SCOPE_SYSTEM);
   /* end to schedule thread independently */
 
-  /* Create the producer and consumer threads */
-  pthread_create(&tid1[0], &attr[0], &handler, NULL);
+  /* Create threads for each client connection */
+  // may not need &attr[0] => NULL (default values)
+  for (i = 0; i < CLIENTS; i++){
+     if(pthread_create(&tid1, &attr[0], &handler, (void *)i) < 0){
+        perror("could not create pthread");
+        exit(-1);
+     }
+     sleep(2);
+  }
 
   /* Wait for the threads to finish */
-  pthread_join(tid1[0], NULL);
+  //pthread_join(tid1, NULL);
 
-  printf("from parent counter  =  %d\n", buffer.count);
+  printf("Number of Client Connections  =  %d\n", buffer.connection_count);
   printf("------------------------------------------------\n");
   printf("\t\t End of simulation\n");
 
@@ -95,8 +99,8 @@ main(){
 
   if ((shmctl (shmid, IPC_RMID, (struct shmid_ds *) 0)) == -1)
   {
-    perror ("shmctl");
-    exit (-1);
+    perror("shmctl");
+    exit(-1);
   }
   exit(0);
 }
