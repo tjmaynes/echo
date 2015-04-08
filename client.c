@@ -23,7 +23,8 @@ main(){
     perror("Failed to create socket!");
     return -1;
   }
-  
+
+  // setup server address and port, AF_INET => internet protocol
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = inet_addr(IPADDR);
   server.sin_port = htons(PORT);
@@ -34,6 +35,7 @@ main(){
     return -1;
   }
 
+  // inform user that they are connected to the remote server (include info)
   printf("\nConnected to server: %s on Port: %d", IPADDR, PORT);
 
   while(true){
@@ -73,6 +75,10 @@ main(){
       break;
     }
   }
+  // destroy socket
+  close(socket_setup);
+
+  // thank the user for trying out the program
   printf("\nThank you for using this program!");
   return 0;
 }
