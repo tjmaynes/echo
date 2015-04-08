@@ -2,7 +2,6 @@
 // Authors: TJ Maynes and Chris Migut
 #include <pthread.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -12,16 +11,13 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
-#include <signal.h>
 #include <sys/socket.h>
-#include <netdb.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 
 #define _REENTRANT
 #define SHMKEY ((key_t) 5555)
 #define BUFFER_SIZE 13
-#define PORT "8080"
+#define PORT 8080
 #define CLIENTS 10
 
 // function headers
@@ -42,53 +38,52 @@ sem_t sem3; // full
 
 // handler function
 void* handler(void* args) {
-  int handlerThread = (int)args;
-  int client;
 
-  // create tcp socket connection
-  if((client = socket(AF_INET,SOCK_STREAM,0)) < 0 ){
-    perror("Failed to create socket for client");
-    exit(1);
-  }
-
-  fflush(stdout);
-  pthread_exit(NULL);
 }
 
 int
 main(){
-  int i;                      /* count */
-  int shmid;                  /* shared memory ID */
-  pthread_t tid[CLIENTS];     /* process id for thread 1 */
-  pthread_attr_t attr[1];     /* attribute pointer array */
-  char *shmadd;
-  shmadd = (char *) 0;
+  int socketSetup, clientSocket, newSocket, clientLength;
+  struct sockaddr_in client, server;
 
-  /* Create and connect to a shared memory segment*/
-  if ((shmid = shmget (SHMKEY, sizeof(int), IPC_CREAT | 0666)) < 0)
-  {
-    perror ("shmget");
-    exit (1);
+  // create tcp socket
+  socketSetup = socket(AF_INET, SOCK_STREAM, 0);
+
+  // error check socket creation
+  if (socketSetup == -1){
+    perror("Could not create socket!");
+    return -1;
+  }
+  // set up server
+  server.sin_family = AF_INET;
+  server.sin_addr.s_addr = INADDR_ANY;
+  server.sin_port = htons(PORT);
+
+  // bind socket
+  if(bind(socketSetup,(struct sockaddr *)&server, sizeof(server)) < 0){
+    perror("bind failed");
+    return -1;
   }
 
-  // initialize semaphores
-  sem_init(&sem1, 0, BUFFER_SIZE); // initialize empty
-  sem_init(&sem2, 0, 1);           // initialize mutex
-  sem_init(&sem3, 0, 0);           // initialize full
+  // listen for a specific number of connections on the socket
+  listen(socketSetup, CLIENTS);
 
-  /* Required to schedule thread independently.*/
-  pthread_attr_init(&attr[0]);
-  pthread_attr_setscope(&attr[0], PTHREAD_SCOPE_SYSTEM);
-  /* end to schedule thread independently */
+  printf("Waiting for incoming connections...");
 
+  clientLength = sizeof(struct sockaddr_in);
+  
   /* Create threads for each client connection */
   // may not need &attr[0] => NULL (default values)
-  for (i = 0; i < CLIENTS; i++){
-     if(pthread_create(&tid[i], &attr[0], &handler, (void *)i) < 0){
-        perror("could not create pthread");
-        exit(-1);
-     }
-     sleep(2);
+  while((clientSocket = accept(socketDescription, (struct sockaddr*)&client, (socklen_t*)&clientLength))){
+
+    pthread_t tid;              /* process id for thread 1 */
+    pthread_attr_t attr[1];     /* attribute pointer array */
+    
+    if(pthread_create(&tid, NULL, &handler, (void *)i) < 0){
+      perror("could not create pthread");
+      exit(-1);
+    }
+    sleep(2);
   }
 
   /* Wait for the threads to finish */
