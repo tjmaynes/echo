@@ -2,6 +2,7 @@
 # File: Makefile
 
 CFLAGS = -Wall -o
+PROGRAM = server client
 
 main:
 	gcc server.c $(CFLAGS) server -lpthread -lrt
