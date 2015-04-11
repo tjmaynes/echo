@@ -2,10 +2,11 @@
 # File: Makefile
 
 CFLAGS = -Wall -o
+PROGRAM = client server
 
 main:
-	gcc server.c $(CFLAGS) server -lpthread -lrt
-	gcc client.c $(CFLAGS) client -lpthread -lrt
+	gcc server.c $(CFLAGS) server -lpthread
+	gcc client.c $(CFLAGS) client -lpthread
 
 client:
 	./client

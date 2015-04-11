@@ -1,12 +1,14 @@
 // File: client.c
 // Authors: TJ Maynes and Chris Migut
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
 
 #define PORT 8080
-#define IPADDR "127.0.0.1"
+#define IPADDR "127.0.0.1" // change to desired remote ip address to server
 
 int
 main(){
@@ -38,18 +40,14 @@ main(){
   // inform user that they are connected to the remote server (include info)
   printf("\nConnected to server: %s on Port: %d", IPADDR, PORT);
 
-  while(true){
+  while(1){
     // declare messages
-    char* message_sent;
-    char* message_response;
+    char message_sent[10];
+    char message_received[10];
     int decision = 0;
-    
-    // create arrays
-    message_sent = malloc(1000);
-    message_received = malloc(2000);
 
     // input a message to send to server
-    printf("\nEnter a message to send: ");
+    printf("\nEnter a message to send (up to 10 characters): ");
     scanf("%s", message_sent);
 
     // send message to remote server
@@ -59,10 +57,10 @@ main(){
     }
 
     // receive message from remote server
-    if (recv(socet_setup, message_received, sizeof(message_received), 0) < 0){
+    if (recv(socket_setup, message_received, sizeof(message_received), 0) < 0){
       perror("Failed to receive message!");
       return -1;
-    } 
+    }
     printf("Message recieved from server: %s", message_received);
 
     // free message arrays
@@ -70,7 +68,7 @@ main(){
     free(message_received);
 
     printf("\nWould you like to run this program again? (0 or 1)");
-    scanf("%d", decision);
+    scanf("%d", &decision);
     if (decision == 0){
       break;
     }
