@@ -10,10 +10,10 @@ To compile this project, simply run:
 * make clean
 * make
 
-To run the client, simply enter:
-
-* make client
-
 To run the server, simply enter:
 
-* make server
+* ./server
+
+To run the client, simply enter:
+
+* ./client

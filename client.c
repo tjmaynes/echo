@@ -40,43 +40,48 @@ main(){
   // inform user that they are connected to the remote server (include info)
   printf("\nConnected to server: %s on Port: %d", IPADDR, PORT);
 
-  while(1){
-    // declare messages
-    char message_sent[10];
-    char message_received[10];
-    int decision = 0;
+  // declare messages
+  char message_received[50];
+  char message_response[10];
 
-    // input a message to send to server
-    printf("\nEnter a message to send (up to 10 characters): ");
-    scanf("%s", message_sent);
-
-    // send message to remote server
-    if (send(socket_setup, message_sent, sizeof(message_sent), 0) < 0){
-      perror("Failed to send message!");
-      return -1;
-    }
-
-    // receive message from remote server
-    if (recv(socket_setup, message_received, sizeof(message_received), 0) < 0){
-      perror("Failed to receive message!");
-      return -1;
-    }
-    printf("Message recieved from server: %s", message_received);
-
-    // free message arrays
-    free(message_sent);
-    free(message_received);
-
-    printf("\nWould you like to run this program again? (0 or 1)");
-    scanf("%d", &decision);
-    if (decision == 0){
-      break;
-    }
+  // receive initial message from remote server
+  if (recv(socket_setup, message_received, sizeof(message_received), 0) < 0){
+    perror("Failed to receive message!");
+    return -1;
   }
+
+  // print out and submit message
+  printf("\n%s", message_received);
+  scanf ("%[^\n]%*c", message_response);
+
+  // send message to remote server
+  if (send(socket_setup, message_response, sizeof(message_response), 0) < 0){
+    perror("Failed to send message!");
+    return -1;
+  }
+
+  // receive final message from server
+  if (recv(socket_setup, message_received, sizeof(message_received), 0) < 0){
+    perror("Failed to receive message!");
+    return -1;
+  }
+  printf("\n%s\n", message_received);
+  /*
+  // send another message to the server?
+  printf("\nWould you like to send another message to the server? (0 or 1)\n> ");
+  scanf("%d", &decision);
+  if (decision == 0){
+  break;
+  } else {
+  continue;
+  }
+  }
+  */
+
   // destroy socket
   close(socket_setup);
 
   // thank the user for trying out the program
-  printf("\nThank you for using this program!");
+  printf("\nThank you for using this program!\n");
   return 0;
 }

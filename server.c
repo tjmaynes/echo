@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -21,11 +22,11 @@
 #define PORT 8080
 
 // function headers
-void* handler(void* args); // get
+void* handler(void* args); // get handler
 
 typedef struct {
   int connection_count;
-  char messages[BUFFER_SIZE];
+  char *messages[BUFFER_SIZE];
 } shared_mem;
 
 // shared memory buffer of values and a counter
@@ -36,40 +37,15 @@ sem_t sem1; // empty
 sem_t sem2; // mutex
 sem_t sem3; // full
 
-// handler function
-void* handler(void* args) {
-  int socket = *(int*)args;
-  int size_of_packet = 0;
-  char message_from_client[BUFFER_SIZE/CLIENTS];
-
-  while((size_of_packet = recv(socket, message_from_client, BUFFER_SIZE / CLIENTS, 0)) > 0){
-
-    // indicate end of message
-    message_from_client[size_of_packet] = '\0';
-
-    //
-
-    // produce an item in next produced
-    sem_wait(&sem1); // empty
-    sem_wait(&sem2); // mutex
-    //buffer.messages[BUFFER_SIZE/CLIENTS] = message_from_client; // circular buffer
-    // add next produced to the buffer
-    sem_post(&sem2); // mutex
-    sem_post(&sem3); // full
-
-  }
-  // exit pthread
-  pthread_exit(0);
-}
-
 int
 main(){
   int socket_setup, client_socket, client_length, shmid = 0;
   struct sockaddr_in client, server;
-  pthread_t threads;
 
   // create tcp socket
   socket_setup = socket(AF_INET, SOCK_STREAM, 0);
+
+  puts("Welcome to the server!");
 
   // error check socket creation
   if (socket_setup == -1){
@@ -89,29 +65,46 @@ main(){
   }
 
   // listen for a specific number of connections on the socket
-  listen(socket_setup, CLIENTS);
+  listen(socket_setup, 2);
 
-  printf("Waiting for incoming connections...");
+  puts("Waiting for incoming connections...");
 
   client_length = sizeof(struct sockaddr_in);
 
   /* Create threads for each client connection */
   // may not need &attr[0] => NULL (default values)
-  while((client_socket = accept(socket_setup, (struct sockaddr*)&client, (socklen_t*)&client_length))){
+  while((client_socket = accept(socket_setup, (struct sockaddr*)&client, (socklen_t*)&client_length)) > 0){
+    if (buffer.connection_count < CLIENTS){
+      pthread_t threads;
+      // connection made
+      puts("\n....Accepted Connection....");
 
-    // connection made
-    printf("Accepted Connection....");
+      /* produce an item in next produced */
+      sem_wait(&sem1); // empty
+      sem_wait(&sem2); // mutex
+      buffer.connection_count++; // circular buffer
+      /* add next produced to the buffer */
+      sem_post(&sem2); // mutex
+      sem_post(&sem3); // full
 
-    if(pthread_create(&threads, NULL, &handler, (void *)&client_socket) < 0){
-      perror("could not create pthread");
-      return -1;
+      if(pthread_create(&threads, NULL, &handler, (void *)&client_socket) < 0){
+	perror("could not create pthread");
+	return -1;
+      }
+      pthread_join(threads, NULL);
+      sleep(2);
+    } else {
+      char *message_to_client;
+      message_to_client = "Server is shutting down! Too many cooks!";
+      send(socket, message_to_client, strlen(message_to_client),0);
+      sleep(2);
+      break;
     }
-    sleep(2);
   }
 
-  printf("Number of Client Connections  =  %d\n", buffer.connection_count);
-  printf("\nMessages: %s", buffer.messages);
   printf("------------------------------------------------\n");
+  printf("Number of Client Connections  =  %d\n", buffer.connection_count);
+  printf("\nMessages: %s", &buffer.messages[BUFFER_SIZE]);
   printf("\t\t End of simulation\n");
 
   // destroy semaphores
@@ -126,4 +119,41 @@ main(){
     }
 
   return 0;
+}
+
+// handler function
+void* handler(void* args) {
+  int socket = *(int*)args;
+  int size_of_packet = 0;
+  char *message_to_client;
+  char message_from_client[10];
+
+  message_to_client = "Enter a message to send (up to 10 characters): ";
+  send(socket, message_to_client, strlen(message_to_client),0);
+
+  while((size_of_packet = recv(socket, message_from_client, 10, 0)) > 0){
+    message_from_client[size_of_packet] = '\0';
+
+    /* produce an item in next produced */
+    sem_wait(&sem1); // empty
+    sem_wait(&sem2); // mutex
+    buffer.messages[CLIENTS % BUFFER_SIZE] = message_from_client; // circular buffer
+    /* add next produced to the buffer */
+    sem_post(&sem2); // mutex
+    sem_post(&sem3); // full
+
+    send(socket, message_from_client, 10, 0);
+    memset(message_from_client, 0, 10);
+  }
+
+  if(size_of_packet == 0){
+    puts("\n....Client disconnected....");
+    fflush(stdout);
+  }
+  else if(size_of_packet == -1){
+    perror("\nrecv failed");
+  }
+
+  // exit pthread
+  pthread_exit(0);
 }
