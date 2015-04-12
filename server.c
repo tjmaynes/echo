@@ -80,24 +80,26 @@ main(){
   // may not need &attr[0] => NULL (default values)
   pthread_t threads = NULL;
   while((client_socket = accept(socket_setup, (struct sockaddr*)&client, (socklen_t*)&client_length)) > 0){
-      printf("\n Created new thread (%u) ... \n", threads);
+    // debug => thread id
+    //printf("\n Created new thread (%u) ... \n", threads);
 
-      // connection made
-      puts("\n....Accepted Connection....");
+    // connection made
+    puts("\n....Accepted Connection....");
 
-      /* produce an item in next produced */
-      sem_wait(&sem1); // empty
-      sem_wait(&sem2); // mutex
-      buffer.connection_count++; // increment count
-      /* add next produced to the buffer */
-      sem_post(&sem2); // mutex
-      sem_post(&sem3); // full
+    /* produce an item in next produced */
+    sem_wait(&sem1); // empty
+    sem_wait(&sem2); // mutex
+    buffer.connection_count++; // increment count
+    /* add next produced to the buffer */
+    sem_post(&sem2); // mutex
+    sem_post(&sem3); // full
 
-      if(pthread_create(&threads, NULL, &handler, (void *)&client_socket) < 0){
-	perror("could not create pthread");
-	return -1;
-      }
+    if(pthread_create(&threads, NULL, &handler, (void *)&client_socket) < 0){
+      perror("could not create pthread");
+      return -1;
+    }
   }
+  pthread_join(threads, NULL);
 
   printf("----------------------------------------------------------------------\n");
   printf("Number of Client Connections  =  %d\n", buffer.connection_count);
