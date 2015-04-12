@@ -26,7 +26,6 @@ void* handler(void* args); // get handler
 
 typedef struct {
   int connection_count;
-  char *messages[BUFFER_SIZE];
 } shared_mem;
 
 // shared memory buffer of values and a counter
@@ -39,8 +38,14 @@ sem_t sem3; // full
 
 int
 main(){
-  int socket_setup, client_socket, client_length = 0;
+  int socket_setup, client_socket, client_length, shmid = 0;
   struct sockaddr_in client, server;
+
+  // Create and connect to a shared memory segment
+  if ((shmid = shmget (SHMKEY, sizeof(int), IPC_CREAT | 0666)) < 0) {
+    perror ("shmget");
+    exit (1);
+  }
 
   // initialize semaphores
   sem_init(&sem1, 0, BUFFER_SIZE); // initialize empty
@@ -101,9 +106,6 @@ main(){
   }
   pthread_join(threads, NULL);
 
-  printf("----------------------------------------------------------------------\n");
-  printf("Number of Client Connections  =  %d\n", buffer.connection_count);
-  printf("\nMessages =  %s", &buffer.messages[BUFFER_SIZE]);
   printf("\nEnd of simulation\n\n");
 
   // destroy semaphores
@@ -129,15 +131,21 @@ void* handler(void* args) {
 
     puts(message_from_client);
 
-    /* produce an item in next produced */
-    sem_wait(&sem1); // empty
-    sem_wait(&sem2); // mutex
-    buffer.messages[CLIENTS % BUFFER_SIZE] = message_from_client; // circular buffer
-    /* add next produced to the buffer */
-    sem_post(&sem2); // mutex
-    sem_post(&sem3); // full
+    char c;
+    int len = strlen(message_from_client);
 
+    // reverse message from client
+    for (int i=0; i< len/2; i++) {
+        c = message_from_client[i];
+        message_from_client[i] = message_from_client[len - i - 1];
+        message_from_client[len - i - 1] = c;
+    }
+
+    puts(message_from_client);
     send(socket, message_from_client, 10, 0);
+
+    send(socket, &buffer.connection_count, sizeof(buffer.connection_count), 0);
+
     memset(message_from_client, 0, 10);
   }
 
