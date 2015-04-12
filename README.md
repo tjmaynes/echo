@@ -4,7 +4,7 @@
 
 *School Project*
 
-This program demostrates the use of multithreading and semaphores in building application like a client/server.
+The purpose of this project is to build an echo server with client using pthreads and semaphores.
 
 *THIS PROJECT ONLY WORKS ON UNIX MACHINES*
 
