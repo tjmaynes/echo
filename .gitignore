@@ -1,7 +1,8 @@
 .DS_Store
 client
 server
-
+*.cls
+*.tex
 *.aux
 *.glo
 *.idx
