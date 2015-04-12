@@ -15,7 +15,7 @@ main(){
   int socket_setup;
   struct sockaddr_in server;
 
-  printf("Welcome to the Client Connection Program!");
+  puts("Welcome to the Client Connection Program!");
 
   // create tcp connection
   socket_setup = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,12 +33,12 @@ main(){
 
   // connect to remote server
   if (connect(socket_setup, (struct sockaddr *)&server, sizeof(server)) < 0){
-    perror("Failed to connect to remote server!");
+    perror("Failed to connect to remote server");
     return -1;
   }
 
   // inform user that they are connected to the remote server (include info)
-  printf("\nConnected to server: %s on Port: %d", IPADDR, PORT);
+  printf("Connected to server: %s on Port: %d\n", IPADDR, PORT);
 
   // declare messages
   char message_received[50];
@@ -66,17 +66,6 @@ main(){
     return -1;
   }
   printf("\n%s\n", message_received);
-  /*
-  // send another message to the server?
-  printf("\nWould you like to send another message to the server? (0 or 1)\n> ");
-  scanf("%d", &decision);
-  if (decision == 0){
-  break;
-  } else {
-  continue;
-  }
-  }
-  */
 
   // destroy socket
   close(socket_setup);

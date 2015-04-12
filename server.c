@@ -39,13 +39,18 @@ sem_t sem3; // full
 
 int
 main(){
-  int socket_setup, client_socket, client_length, shmid = 0;
+  int socket_setup, client_socket, client_length = 0;
   struct sockaddr_in client, server;
+
+  // initialize semaphores
+  sem_init(&sem1, 0, BUFFER_SIZE); // initialize empty
+  sem_init(&sem2, 0, 1);           // initialize mutex
+  sem_init(&sem3, 0, 0);           // initialize full
 
   // create tcp socket
   socket_setup = socket(AF_INET, SOCK_STREAM, 0);
 
-  puts("Welcome to the server!");
+  puts("Welcome to the Server!");
 
   // error check socket creation
   if (socket_setup == -1){
@@ -73,16 +78,17 @@ main(){
 
   /* Create threads for each client connection */
   // may not need &attr[0] => NULL (default values)
+  pthread_t threads = NULL;
   while((client_socket = accept(socket_setup, (struct sockaddr*)&client, (socklen_t*)&client_length)) > 0){
-    if (buffer.connection_count < CLIENTS){
-      pthread_t threads;
+      printf("\n Created new thread (%u) ... \n", threads);
+
       // connection made
       puts("\n....Accepted Connection....");
 
       /* produce an item in next produced */
       sem_wait(&sem1); // empty
       sem_wait(&sem2); // mutex
-      buffer.connection_count++; // circular buffer
+      buffer.connection_count++; // increment count
       /* add next produced to the buffer */
       sem_post(&sem2); // mutex
       sem_post(&sem3); // full
@@ -91,32 +97,17 @@ main(){
 	perror("could not create pthread");
 	return -1;
       }
-      pthread_join(threads, NULL);
-      sleep(2);
-    } else {
-      char *message_to_client;
-      message_to_client = "Server is shutting down! Too many cooks!";
-      send(socket, message_to_client, strlen(message_to_client),0);
-      sleep(2);
-      break;
-    }
   }
 
-  printf("------------------------------------------------\n");
+  printf("----------------------------------------------------------------------\n");
   printf("Number of Client Connections  =  %d\n", buffer.connection_count);
-  printf("\nMessages: %s", &buffer.messages[BUFFER_SIZE]);
-  printf("\t\t End of simulation\n");
+  printf("\nMessages =  %s", &buffer.messages[BUFFER_SIZE]);
+  printf("\nEnd of simulation\n\n");
 
   // destroy semaphores
   sem_destroy(&sem1); // destroy empty
   sem_destroy(&sem2); // destroy mutex
   sem_destroy(&sem3); // destroy full
-
-  if ((shmctl (shmid, IPC_RMID, (struct shmid_ds *) 0)) == -1)
-    {
-      perror("shmctl");
-      exit(-1);
-    }
 
   return 0;
 }
@@ -133,6 +124,8 @@ void* handler(void* args) {
 
   while((size_of_packet = recv(socket, message_from_client, 10, 0)) > 0){
     message_from_client[size_of_packet] = '\0';
+
+    puts(message_from_client);
 
     /* produce an item in next produced */
     sem_wait(&sem1); // empty
