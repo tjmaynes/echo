@@ -43,7 +43,7 @@ main(){
   // declare messages
   char message_received[50];
   char message_response[10];
-  char connection_count[4];
+  int connection_count = 0;
 
   // receive initial message from remote server
   if (recv(socket_setup, message_received, sizeof(message_received), 0) < 0){
@@ -69,11 +69,11 @@ main(){
   printf("\nMessage received from the server: %s\n", message_received);
 
   // receive final message from server
-  if (recv(socket_setup, connection_count, sizeof(connection_count), 0) < 0){
+  if (recv(socket_setup, &connection_count, sizeof(connection_count), 0) < 0){
     perror("Failed to receive message!");
     return -1;
   }
-  printf("\nNumber of current client connections: %s\n", connection_count);
+  printf("\nNumber of current client connections: %d\n", ntohl(connection_count));
 
 
   // destroy socket

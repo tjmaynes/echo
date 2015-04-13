@@ -144,7 +144,10 @@ void* handler(void* args) {
     puts(message_from_client);
     send(socket, message_from_client, 10, 0);
 
-    send(socket, &buffer.connection_count, sizeof(buffer.connection_count), 0);
+    // convert buffer.connection_count to htonl
+    int converted_number = htonl(buffer.connection_count);
+
+    send(socket, &converted_number, sizeof(converted_number), 0);
 
     memset(message_from_client, 0, 10);
   }
