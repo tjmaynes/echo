@@ -73,7 +73,7 @@ main(){
     perror("Failed to receive message!");
     return -1;
   }
-  printf("\nNumber of current client connections: %d\n", ntohl(connection_count));
+  printf("\nTotal number of client connections (at start of client program): %d\n", ntohl(connection_count));
 
 
   // destroy socket
